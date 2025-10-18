@@ -1,0 +1,28 @@
+{
+  "player1": {
+    "title": "🥋 PLAYER 1 (BLUE)",
+    "controls": {
+      "Move Left": "A",
+      "Move Right": "D",
+      "Jump": "W",
+      "Strike": "F",
+      "Block": "G"
+    }
+  },
+  "player2": {
+    "title": "🥋 PLAYER 2 (RED)",
+    "controls": {
+      "Move Left": "←",
+      "Move Right": "→",
+      "Jump": "↑",
+      "Strike": "N",
+      "Block": "M"
+    }
+  },
+  "combat": [
+    "Combo Attacks: Chain strikes together for increased damage!",
+    "Blocking: Hold block to reduce incoming damage, but beware of block fatigue!",
+    "Special Moves: Land 3 consecutive hits to perform a devastating combo finisher!",
+    "Victory: Reduce your opponent's health to zero to win the match!"
+  ]
+}
