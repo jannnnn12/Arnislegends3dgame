@@ -1,0 +1,140 @@
+{
+  "gameTitle": "ARNIS LEGENDS",
+  "subtitle": "Experience Filipino martial arts in stunning 3D! Master traditional Arnis stick fighting techniques.",
+  "fighters": {
+    "player1": {
+      "name": "MAGELLAN",
+      "displayName": "PLAYER 1 - MAGELLAN",
+      "color": "#000000",
+      "startPosition": {
+        "x": -3,
+        "y": 0,
+        "z": 0
+      },
+      "stats": {
+        "health": 100,
+        "speed": 0.12,
+        "jumpPower": 0.35,
+        "attackDamage": 15,
+        "attackRange": 2.5
+      },
+      "controls": {
+        "left": "KeyA",
+        "right": "KeyD",
+        "up": "KeyW",
+        "down": "KeyS",
+        "jump": "Space",
+        "attack": "KeyF",
+        "block": "KeyG"
+      },
+      "controlsDisplay": {
+        "Move Left": "A",
+        "Move Right": "D",
+        "Move Forward": "W",
+        "Move Backward": "S",
+        "Jump": "Space",
+        "Strike": "F",
+        "Block": "G"
+      }
+    },
+    "player2": {
+      "name": "LAPU-LAPU",
+      "displayName": "PLAYER 2 - LAPU-LAPU",
+      "color": "#e74c3c",
+      "startPosition": {
+        "x": 3,
+        "y": 0,
+        "z": 0
+      },
+      "stats": {
+        "health": 100,
+        "speed": 0.12,
+        "jumpPower": 0.35,
+        "attackDamage": 15,
+        "attackRange": 2.5
+      },
+      "controls": {
+        "left": "ArrowLeft",
+        "right": "ArrowRight",
+        "up": "ArrowUp",
+        "down": "ArrowDown",
+        "jump": "KeyB",
+        "attack": "KeyN",
+        "block": "KeyM"
+      },
+      "controlsDisplay": {
+        "Move Left": "←",
+        "Move Right": "→",
+        "Move Forward": "↑",
+        "Move Backward": "↓",
+        "Jump": "B",
+        "Strike": "N",
+        "Block": "M"
+      }
+    }
+  },
+  "combat": {
+    "comboMultipliers": {
+      "combo2": 1.3,
+      "combo3": 1.8
+    },
+    "knockbackMultipliers": {
+      "combo2": 1.5,
+      "combo3": 2.0
+    },
+    "blockDamageReduction": 0.25,
+    "blockKnockbackReduction": 0.4,
+    "stunDuration": 20,
+    "hitFlashDuration": 25,
+    "attackCooldown": 30,
+    "blockFatigueCooldown": 40,
+    "comboWindowFrames": 90
+  },
+  "arena": {
+    "groundColor": "#6B4423",
+    "groundSize": {
+      "width": 14,
+      "depth": 10
+    },
+    "boundaries": {
+      "minX": -4.5,
+      "maxX": 4.5,
+      "minZ": -3,
+      "maxZ": 3
+    },
+    "bambooPositions": [
+      [-6, 0, -4],
+      [-6, 0, 0],
+      [-6, 0, 4],
+      [6, 0, -4],
+      [6, 0, 0],
+      [6, 0, 4],
+      [0, 0, -5],
+      [0, 0, 6]
+    ]
+  },
+  "camera": {
+    "fov": 60,
+    "position": {
+      "x": 0,
+      "y": 2.5,
+      "z": 5.5
+    },
+    "lookAt": {
+      "x": 0,
+      "y": 0.8,
+      "z": 0
+    }
+  },
+  "physics": {
+    "gravity": 0.02,
+    "groundLevel": 0
+  },
+  "visuals": {
+    "stickColor": "#8B4513",
+    "skinColor": "#FFDBAC",
+    "bambooColor": "#2d7a1f",
+    "backgroundFallback": "#2d5016",
+    "healthBarGradient": "linear-gradient(90deg, #e74c3c, #f1c40f, #2ecc71)"
+  }
+}
