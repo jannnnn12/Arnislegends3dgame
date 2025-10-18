@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arnis Legends - Instructions</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      background: url("img/bamboo.gif") no-repeat center center fixed;
+      background-size: cover;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: 'Orbitron', monospace;
+    }
+
+    .instructions-screen {
+      background: rgba(0, 0, 0, 0.7);
+      padding: 40px;
+      border-radius: 20px;
+      max-width: 900px;
+      text-align: center;
+      color: #ecf0f1;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
+    }
+
+    h2 {
+      color: #ffffff;
+      font-size: 2.5em;
+      margin-bottom: 30px;
+    }
+
+    .controls-panel {
+      display: flex;
+      justify-content: space-around;
+      margin-bottom: 30px;
+    }
+
+    .control-group {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 20px;
+      border-radius: 15px;
+      width: 40%;
+    }
+
+    .control-title {
+      font-size: 1.4em;
+      margin-bottom: 15px;
+      color: #f70000;
+      font-weight: 700;
+    }
+
+    .control-item {
+      display: flex;
+      justify-content: space-between;
+      margin: 8px 0;
+      font-size: 1.1em;
+    }
+
+    .key {
+      background: #f39c12;
+      padding: 5px 10px;
+      border-radius: 8px;
+      color: #000;
+      font-weight: bold;
+      margin-left: 10px;
+      min-width: 30px;
+      text-align: center;
+    }
+    .key:hover{
+        background: linear-gradient(145deg, #e67e22, #d35400);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(243, 156, 18, 0.5);
+    }
+    h3 {
+      color: #f39c12;
+      margin-top: 20px;
+    }
+
+    p {
+      margin: 8px 0;
+      line-height: 1.6;
+    }
+
+    .menu-button {
+      background: linear-gradient(145deg, #f39c12, #e67e22);
+      color: white;
+      border: none;
+      padding: 15px 30px;
+      border-radius: 10px;
+      cursor: pointer;
+      margin-top: 25px;
+      font-size: 18px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      box-shadow: 0 4px 15px rgba(243, 156, 18, 0.3);
+      transition: all 0.3s ease;
+    }
+
+    .menu-button:hover {
+      background: linear-gradient(145deg, #e67e22, #d35400);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(243, 156, 18, 0.5);
+    }
+  </style>
+</head>
+<body>
+  <div class="instructions-screen" id="instructionsScreen">
+    <h2>INSTRUCTIONS AND CONTROLS</h2>
+
+    <div class="controls-panel">
+      <div class="control-group" id="player1"></div>
+      <div class="control-group" id="player2"></div>
+    </div>
+
+    <h3>🥊 COMBAT SYSTEM</h3>
+    <div id="combat"></div>
+
+   
+    <button class="menu-button" onclick="window.location.href='game.html'">Back to Menu</button>
+  </div>
+
+  <script>
+    // Fetch instructions from JSON (API simulation)
+    fetch("api/instruction.json")
+      .then(response => response.json())
+      .then(data => {
+        // Player 1
+        const player1Div = document.getElementById("player1");
+        player1Div.innerHTML = `<div class="control-title">${data.player1.title}</div>` +
+          Object.entries(data.player1.controls)
+            .map(([action, key]) =>
+              `<div class="control-item"><span>${action}:</span> <span class="key">${key}</span></div>`
+            ).join("");
+
+        // Player 2
+        const player2Div = document.getElementById("player2");
+        player2Div.innerHTML = `<div class="control-title">${data.player2.title}</div>` +
+          Object.entries(data.player2.controls)
+            .map(([action, key]) =>
+              `<div class="control-item"><span>${action}:</span> <span class="key">${key}</span></div>`
+            ).join("");
+
+        // Combat system
+        const combatDiv = document.getElementById("combat");
+        combatDiv.innerHTML = data.combat.map(c => `<p><strong>${c}</strong></p>`).join("");
+      })
+      .catch(error => console.error("Error loading instructions:", error));
+  </script>
+</body>
+</html>

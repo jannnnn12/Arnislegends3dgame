@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Arnis Legends</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      font-family: 'Orbitron', monospace;
+      background: linear-gradient(135deg, #0f990f, #1c752f);
+    }
+
+    #gameCanvas {
+      display: block;
+      width: 100%;
+      height: 100vh;
+    }
+
+    .loading {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: #f39c12;
+      font-size: 24px;
+      z-index: 2000;
+    }
+
+    /* HUD layout (updated look) */
+    .hud {
+      position: absolute;
+      top: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      justify-content: space-between;
+      width: 92%;
+      max-width: 1100px;
+      color: white;
+      font-weight: bold;
+      z-index: 100;
+      pointer-events: none;
+    }
+
+    .player-info {
+      pointer-events: auto;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: linear-gradient(180deg, rgba(0,0,0,0.65), rgba(0,0,0,0.55));
+      padding: 10px 14px;
+      border-radius: 12px;
+      border: 2px solid rgba(243,156,18,0.15);
+      min-width: 260px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+      backdrop-filter: blur(4px);
+    }
+
+    .player-badge {
+      width: 56px;
+      height: 56px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 18px;
+      color: white;
+      flex-shrink: 0;
+      box-shadow: inset 0 -4px 10px rgba(0,0,0,0.4);
+      overflow: hidden;               /* ensure avatar doesn't overflow */
+      background-size: cover;
+      background-position: center;
+      position: relative; /* for hit indicator */
+    }
+
+    .player-avatar {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      border-radius: 8px;
+    }
+
+    /* Hit indicator (shows while hitFlash > 0) */
+    .hit-indicator {
+      position: absolute;
+      right: 6px;
+      top: 6px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #ff3b3b;
+      box-shadow: 0 0 6px rgba(255,59,59,0.7);
+      opacity: 0;
+      transform: scale(0.85);
+      transition: opacity 0.12s ease, transform 0.12s ease;
+      pointer-events: none;
+    }
+    .hit-indicator.active {
+      opacity: 1;
+      transform: scale(1.05);
+      animation: hitPulse 420ms ease-in-out infinite;
+    }
+    @keyframes hitPulse {
+      0% { box-shadow: 0 0 6px rgba(255,59,59,0.7); transform: scale(1.0); }
+      50% { box-shadow: 0 0 14px rgba(255,59,59,1); transform: scale(1.15); }
+      100% { box-shadow: 0 0 6px rgba(255,59,59,0.7); transform: scale(1.0); }
+    }
+
+    .player-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .player-name {
+      font-size: 14px;
+      color: #f1c40f;
+      text-shadow: 0 1px 0 rgba(0,0,0,0.6);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .health-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .health-bar {
+      flex: 1;
+      height: 14px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid rgba(0,0,0,0.35);
+    }
+
+    .health-fill {
+      height: 100%;
+      width: 100%;
+      background: linear-gradient(90deg, #e74c3c, #f1c40f, #2ecc71);
+      transition: width 0.25s linear;
+      transform-origin: left center;
+    }
+
+    .health-value {
+      min-width: 64px;
+      text-align: right;
+      font-size: 13px;
+      color: #ecf0f1;
+      text-shadow: 0 1px 0 rgba(0,0,0,0.6);
+    }
+
+    .game-title {
+      align-self: center;
+      text-align: center;
+      font-size: 20px;
+      color: #f39c12;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+      pointer-events: none;
+    }
+
+    .start-screen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: url("img/bamboo.gif") no-repeat center center fixed;
+      background-size: cover;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .title-3d {
+      font-size: 4em;
+      font-weight: 900;
+      color: #f39c12;
+      text-shadow: 3px 3px 0px #e67e22, 6px 6px 10px rgba(0,0,0,0.5);
+      margin-bottom: 20px;
+      animation: glow 2s ease-in-out infinite alternate;
+    }
+
+    .subtitle {
+      font-size: 1.1em;
+      color: #ecf0f1;
+      text-align: center;
+      margin-bottom: 28px;
+      max-width: 520px;
+      padding: 0 20px;
+    }
+
+    .menu-button {
+      background: linear-gradient(145deg, #f39c12, #e67e22);
+      color: white;
+      border: none;
+      padding: 12px 36px;
+      border-radius: 10px;
+      cursor: pointer;
+      margin: 8px;
+      font-size: 16px;
+      font-family: 'Orbitron', monospace;
+      font-weight: 700;
+      text-transform: uppercase;
+      box-shadow: 0 4px 15px rgba(243, 156, 18, 0.3);
+      transition: all 0.25s ease;
+    }
+
+    .menu-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(243, 156, 18, 0.5);
+    }
+
+    .controls-info {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.65);
+      padding: 12px 20px;
+      border-radius: 10px;
+      color: white;
+      text-align: center;
+      font-size: 13px;
+      z-index: 100;
+    }
+
+    .game-over {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(44, 62, 80, 0.95);
+      color: white;
+      padding: 40px;
+      border-radius: 20px;
+      text-align: center;
+      display: none;
+      border: 3px solid #f39c12;
+      z-index: 1000;
+    }
+
+    .winner-text {
+      font-size: 36px;
+      color: #f39c12;
+      margin-bottom: 20px;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    @keyframes glow {
+      from { text-shadow: 3px 3px 0px #e67e22, 6px 6px 10px rgba(243, 156, 18, 0.5); }
+      to { text-shadow: 3px 3px 0px #e67e22, 6px 6px 20px rgba(243, 156, 18, 0.8); }
+    }
+
+    @media (max-width: 680px) {
+      .hud {
+        top: 10px;
+        width: 96%;
+      }
+      .player-info {
+        min-width: 180px;
+        gap: 8px;
+        padding: 8px;
+      }
+      .player-badge { width: 46px; height: 46px; font-size: 16px; }
+      .health-value { min-width: 52px; font-size: 12px; }
+      .game-title { font-size: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="loading" id="loading">Loading Game Data...</div>
+
+  
+  <audio id="bg-audio" loop preload="auto" style="display:none">
+    <source src="audio/fight.mp3" type="audio/mpeg">
+    Your browser does not support the audio element.
+  </audio>
+
+  <!-- Start Screen -->
+  <div class="start-screen hidden" id="startScreen">
+    <div class="title-3d" id="gameTitle">ARNIS LEGENDS</div>
+    <div class="subtitle" id="gameSubtitle">Experience Filipino martial arts in stunning 3D!</div>
+    <button class="menu-button" onclick="startGame()">START BATTLE</button>
+    <button class="menu-button" onclick="window.location.href='instructions.html'">INSTRUCTIONS</button>
+  </div>
+
+  <!-- HUD -->
+  <div class="hud hidden" id="gameHUD">
+    <div class="player-info" id="player1Info">
+      <div class="player-badge" id="player1Badge" style="background:#3498db">
+        <img id="player1Avatar" class="player-avatar" src="img/pic2.png" alt="Player 1">
+        <div class="hit-indicator" id="hit1"></div>
+      </div>
+      <div class="player-meta">
+        <div class="player-name" id="player1Name">PLAYER 1</div>
+        <div class="health-row">
+          <div class="health-bar">
+            <div class="health-fill" id="health1" style="width: 100%"></div>
+          </div>
+          <div class="health-value" id="health1Value">100/100</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="game-title" id="hudTitle">ARNIS LEGENDS</div>
+
+    <div class="player-info" id="player2Info">
+      <div class="player-badge" id="player2Badge" style="background:#e74c3c">
+        <img id="player2Avatar" class="player-avatar" src="img/pic1.png" alt="Player 2">
+        <div class="hit-indicator" id="hit2"></div>
+      </div>
+      <div class="player-meta">
+        <div class="player-name" id="player2Name">PLAYER 2</div>
+        <div class="health-row">
+          <div class="health-bar">
+            <div class="health-fill" id="health2" style="width: 100%"></div>
+          </div>
+          <div class="health-value" id="health2Value">100/100</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Controls Info -->
+  <div class="controls-info hidden" id="controlsInfo">
+    <strong>P1:</strong> <span id="p1Controls">WASD + F(Strike) G(Block)</span> |
+    <strong>P2:</strong> <span id="p2Controls">Arrows + N(Strike) M(Block)</span>
+  </div>
+
+  <!-- Game Over -->
+  <div class="game-over" id="gameOver">
+    <div class="winner-text" id="winnerText"></div>
+    <button class="menu-button" onclick="restartGame()">FIGHT AGAIN</button>
+    <button class="menu-button" onclick="backToMenu()">MAIN MENU</button>
+  </div>
+
+  <!-- Three.js Canvas -->
+  <canvas id="gameCanvas"></canvas>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    let scene, camera, renderer;
+    let fighter1Mesh, fighter2Mesh;
+    let stick1, stick2;
+    let gameRunning = false;
+    let keys = {};
+    let gameConfig = null;
+
+    class Fighter {
+      constructor(config, playerKey) {
+        const data = config.fighters[playerKey];
+        this.x = data.startPosition.x;
+        this.y = data.startPosition.y;
+        this.z = data.startPosition.z;
+        this.velocityX = 0;
+        this.velocityY = 0;
+        this.velocityZ = 0;
+        this.health = data.stats.health;
+        this.maxHealth = data.stats.health;
+        this.speed = data.stats.speed;
+        this.jumpPower = data.stats.jumpPower;
+        this.attackDamage = data.stats.attackDamage;
+        this.attackRange = data.stats.attackRange;
+        this.onGround = true;
+        this.color = data.color;
+        this.controls = data.controls;
+        this.name = data.name;
+        this.displayName = data.displayName;
+        this.facing = this.x < 0 ? 1 : -1;
+        this.isAttacking = false;
+        this.isBlocking = false;
+        this.attackCooldown = 0;
+        this.blockCooldown = 0;
+        this.comboCount = 0;
+        this.comboTimer = 0;
+        this.stunned = 0;
+        this.hitFlash = 0;
+        this.stickRotation = 0;
+        this.animationFrame = 0;
+      }
+
+      update(opponent) {
+        this.handleInput(opponent);
+        this.updatePhysics();
+        this.updateCombat();
+        this.updateAnimation();
+        this.facing = opponent.x > this.x ? 1 : -1;
+        if (this.hitFlash > 0) this.hitFlash--;
+        if (this.stunned > 0) this.stunned--;
+      }
+
+      handleInput(opponent) {
+        if (!gameRunning || this.stunned > 0) return;
+        this.velocityX = 0;
+        this.velocityZ = 0;
+        if (keys[this.controls.left]) this.velocityX = -this.speed;
+        if (keys[this.controls.right]) this.velocityX = this.speed;
+        if (keys[this.controls.up] && !this.onGround) {
+        } else if (keys[this.controls.up]) this.velocityZ = -this.speed;
+        if (keys[this.controls.down]) this.velocityZ = this.speed;
+        if (keys[this.controls.jump] && this.onGround) {
+          this.velocityY = this.jumpPower;
+          this.onGround = false;
+        }
+        if (keys[this.controls.attack] && this.attackCooldown <= 0) {
+          this.attack(opponent);
+        }
+        this.isBlocking = keys[this.controls.block] && this.blockCooldown <= 0;
+      }
+
+      updatePhysics() {
+        this.velocityY -= gameConfig.physics.gravity;
+        this.x += this.velocityX;
+        this.y += this.velocityY;
+        this.z += this.velocityZ;
+        if (this.y <= gameConfig.physics.groundLevel) {
+          this.y = gameConfig.physics.groundLevel;
+          this.velocityY = 0;
+          this.onGround = true;
+        }
+        const bounds = gameConfig.arena.boundaries;
+        if (this.x < bounds.minX) this.x = bounds.minX;
+        if (this.x > bounds.maxX) this.x = bounds.maxX;
+        if (this.z < bounds.minZ) this.z = bounds.minZ;
+        if (this.z > bounds.maxZ) this.z = bounds.maxZ;
+      }
+
+      updateCombat() {
+        if (this.attackCooldown > 0) this.attackCooldown--;
+        if (this.blockCooldown > 0) this.blockCooldown--;
+        if (this.comboTimer > 0) {
+          this.comboTimer--;
+        } else {
+          this.comboCount = 0;
+        }
+        if (this.attackCooldown <= 10) this.isAttacking = false;
+      }
+
+      updateAnimation() {
+        this.animationFrame += 0.1;
+        if (this.isAttacking) {
+          this.stickRotation = Math.sin(this.attackCooldown * 0.3) * 2;
+        } else if (this.isBlocking) {
+          this.stickRotation = -0.8;
+        } else {
+          this.stickRotation = Math.sin(this.animationFrame) * 0.2;
+        }
+      }
+
+      attack(opponent) {
+        this.isAttacking = true;
+        this.attackCooldown = gameConfig.combat.attackCooldown;
+        this.comboCount++;
+        this.comboTimer = gameConfig.combat.comboWindowFrames;
+        let damage = this.attackDamage;
+        let knockback = 0.3;
+        if (this.comboCount === 2) {
+          damage *= gameConfig.combat.comboMultipliers.combo2;
+          knockback *= gameConfig.combat.knockbackMultipliers.combo2;
+        } else if (this.comboCount >= 3) {
+          damage *= gameConfig.combat.comboMultipliers.combo3;
+          knockback *= gameConfig.combat.knockbackMultipliers.combo3;
+          this.comboCount = 0;
+        }
+        const distance = Math.sqrt(Math.pow(this.x - opponent.x, 2) + Math.pow(this.z - opponent.z, 2));
+        const yDistance = Math.abs(this.y - opponent.y);
+        if (distance < this.attackRange && yDistance < 1) {
+          this.hit(opponent, damage, knockback);
+        }
+      }
+
+      hit(opponent, damage, knockback) {
+        if (opponent.isBlocking) {
+          damage *= gameConfig.combat.blockDamageReduction;
+          knockback *= gameConfig.combat.blockKnockbackReduction;
+          opponent.blockCooldown = gameConfig.combat.blockFatigueCooldown;
+        } else {
+          opponent.stunned = gameConfig.combat.stunDuration;
+          opponent.hitFlash = gameConfig.combat.hitFlashDuration;
+        }
+        opponent.health -= damage;
+        opponent.health = Math.max(0, opponent.health);
+        const directionX = opponent.x > this.x ? 1 : -1;
+        const directionZ = opponent.z > this.z ? 1 : -1;
+        opponent.velocityX = directionX * knockback;
+        opponent.velocityZ = directionZ * knockback * 0.5;
+        updateHealthBar();
+        // set indicator immediately so UI responds on the same frame
+        updateHitIndicators();
+        if (opponent.health <= 0 && gameRunning) {
+          endGame(this.name + ' Wins!');
+        }
+      }
+    }
+
+    let fighter1, fighter2;
+
+    async function loadGameConfig() {
+      try {
+        const response = await fetch('api/game-config.json');
+        gameConfig = await response.json();
+
+        document.getElementById('gameTitle').textContent = gameConfig.gameTitle;
+        document.getElementById('gameSubtitle').textContent = gameConfig.subtitle;
+        document.getElementById('hudTitle').textContent = gameConfig.gameTitle;
+        document.getElementById('player1Name').textContent = gameConfig.fighters.player1.displayName;
+        document.getElementById('player2Name').textContent = gameConfig.fighters.player2.displayName;
+
+        document.getElementById('player1Badge').style.background = gameConfig.fighters.player1.badgeColor || '#3498db';
+        document.getElementById('player2Badge').style.background = gameConfig.fighters.player2.badgeColor || '#e74c3c';
+
+        const p1c = gameConfig.fighters.player1.controlsDisplay;
+        const p2c = gameConfig.fighters.player2.controlsDisplay;
+        document.getElementById('p1Controls').textContent = `WASD + ${p1c.Strike}(Strike) ${p1c.Block}(Block)`;
+        document.getElementById('p2Controls').textContent = `Arrows + ${p2c.Strike}(Strike) ${p2c.Block}(Block)`;
+
+        // set HUD avatars if provided in config (keeps default src if not)
+        const p1Avatar = document.getElementById('player1Avatar');
+        const p2Avatar = document.getElementById('player2Avatar');
+        if (p1Avatar && gameConfig.fighters.player1.avatar) p1Avatar.src = gameConfig.fighters.player1.avatar;
+        if (p2Avatar && gameConfig.fighters.player2.avatar) p2Avatar.src = gameConfig.fighters.player2.avatar;
+
+        fighter1 = new Fighter(gameConfig, 'player1');
+        fighter2 = new Fighter(gameConfig, 'player2');
+
+        document.getElementById('loading').classList.add('hidden');
+        document.getElementById('startScreen').classList.remove('hidden');
+
+        init();
+      } catch (error) {
+        console.error('Error loading game config:', error);
+        document.getElementById('loading').textContent = 'Error loading game data. Please refresh.';
+      }
+    }
+
+    function init() {
+      scene = new THREE.Scene();
+
+      // CHANGED: add subtle fog and set up textured/appealing ground
+      // fog color can be controlled by config or defaults
+      const fogColor = gameConfig && gameConfig.visuals && gameConfig.visuals.fogColor ? gameConfig.visuals.fogColor : 0x0b2b0b;
+      scene.fog = new THREE.Fog(fogColor, 8, 50);
+
+      const loader = new THREE.TextureLoader();
+      loader.load('img/bamboo.gif', function(texture) {
+        scene.background = texture;
+      }, undefined, function(error) {
+        scene.background = new THREE.Color(gameConfig.visuals.backgroundFallback || 0x0a2a0a);
+      });
+
+      const camConfig = gameConfig.camera;
+      camera = new THREE.PerspectiveCamera(camConfig.fov, window.innerWidth / window.innerHeight, 0.1, 1000);
+      camera.position.set(camConfig.position.x, camConfig.position.y, camConfig.position.z);
+      camera.lookAt(camConfig.lookAt.x, camConfig.lookAt.y, camConfig.lookAt.z);
+
+      renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('gameCanvas'), antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+      const ambientLight = new THREE.AmbientLight(0xf6f6f6, 0.6);
+      scene.add(ambientLight);
+      const directionalLight = new THREE.DirectionalLight(0xf6f6f6, 0.8);
+      directionalLight.position.set(3, 8, 4);
+      directionalLight.castShadow = true;
+      directionalLight.shadow.camera.left = -10;
+      directionalLight.shadow.camera.right = 10;
+      directionalLight.shadow.camera.top = 10;
+      directionalLight.shadow.camera.bottom = -10;
+      scene.add(directionalLight);
+
+      const arenaConfig = gameConfig.arena;
+
+      // Create ground geometry once, then replace / enhance material with textures when loaded.
+      const groundGeometry = new THREE.PlaneGeometry(arenaConfig.groundSize.width, arenaConfig.groundSize.depth);
+      // default fallback material (in case textures are missing)
+      const defaultGroundColor = (gameConfig.visuals && gameConfig.visuals.groundColor) ? gameConfig.visuals.groundColor : 0x7b5a2a;
+      const groundMaterial = new THREE.MeshStandardMaterial({ color: defaultGroundColor, roughness: 1.0 });
+      const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+      ground.rotation.x = -Math.PI / 2;
+      ground.receiveShadow = true;
+      ground.receiveShadow = true;
+      scene.add(ground);
+
+      // small decorative ring under fighters to make them pop
+      const ringGeom = new THREE.CircleGeometry(1.2, 32);
+      const ringMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.06 });
+      const ring = new THREE.Mesh(ringGeom, ringMat);
+      ring.rotation.x = -Math.PI / 2;
+      ring.position.y = 0.01; // slightly above ground to avoid z-fighting
+      scene.add(ring);
+
+      createFighter1();
+      createFighter2();
+      createSideBamboo();
+
+      window.addEventListener('keydown', (e) => { keys[e.code] = true; });
+      window.addEventListener('keyup', (e) => { keys[e.code] = false; });
+      window.addEventListener('resize', onWindowResize);
+
+      animate();
+      updateHealthBar();
+    }
+    // ...existing code...
+    function createFighter1() {
+      const group = new THREE.Group();
+      const bodyGeometry = new THREE.BoxGeometry(0.5, 1, 0.3);
+      const bodyMaterial = new THREE.MeshStandardMaterial({ color: fighter1.color });
+      const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+      body.position.y = 0.5;
+      body.castShadow = true;
+      group.add(body);
+
+      const headGeometry = new THREE.SphereGeometry(0.25, 16, 16);
+      const headMaterial = new THREE.MeshStandardMaterial({ color: gameConfig.visuals.skinColor });
+      const head = new THREE.Mesh(headGeometry, headMaterial);
+      head.position.y = 1.25;
+      head.castShadow = true;
+      group.add(head);
+
+      const legGeometry = new THREE.CylinderGeometry(0.08, 0.08, 0.6, 8);
+      const legMaterial = new THREE.MeshStandardMaterial({ color: fighter1.color });
+      const leftLeg = new THREE.Mesh(legGeometry, legMaterial);
+      leftLeg.position.set(-0.15, 0.3, 0);
+      leftLeg.castShadow = true;
+      group.add(leftLeg);
+      const rightLeg = new THREE.Mesh(legGeometry, legMaterial);
+      rightLeg.position.set(0.15, 0.3, 0);
+      rightLeg.castShadow = true;
+      group.add(rightLeg);
+
+      const armGeometry = new THREE.CylinderGeometry(0.06, 0.06, 0.5, 8);
+      const armMaterial = new THREE.MeshStandardMaterial({ color: gameConfig.visuals.skinColor });
+      const leftArm = new THREE.Mesh(armGeometry, armMaterial);
+      leftArm.position.set(-0.3, 0.7, 0);
+      leftArm.rotation.z = 0.3;
+      leftArm.castShadow = true;
+      group.add(leftArm);
+
+      const stickGeometry = new THREE.CylinderGeometry(0.03, 0.03, 1.2, 8);
+      const stickMaterial = new THREE.MeshStandardMaterial({ color: gameConfig.visuals.stickColor });
+      stick1 = new THREE.Mesh(stickGeometry, stickMaterial);
+      stick1.position.set(0.4, 0.8, 0);
+      stick1.rotation.z = Math.PI / 4;
+      stick1.castShadow = true;
+      group.add(stick1);
+
+      fighter1Mesh = group;
+      fighter1Mesh.position.set(fighter1.x, fighter1.y, fighter1.z);
+      scene.add(fighter1Mesh);
+    }
+
+    function createFighter2() {
+      const group = new THREE.Group();
+      const bodyGeometry = new THREE.BoxGeometry(0.5, 1, 0.3);
+      const bodyMaterial = new THREE.MeshStandardMaterial({ color: fighter2.color });
+      const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+      body.position.y = 0.5;
+      body.castShadow = true;
+      group.add(body);
+
+      const headGeometry = new THREE.SphereGeometry(0.25, 16, 16);
+      const headMaterial = new THREE.MeshStandardMaterial({ color: gameConfig.visuals.skinColor });
+      const head = new THREE.Mesh(headGeometry, headMaterial);
+      head.position.y = 1.25;
+      head.castShadow = true;
+      group.add(head);
+
+      const legGeometry = new THREE.CylinderGeometry(0.08, 0.08, 0.6, 8);
+      const legMaterial = new THREE.MeshStandardMaterial({ color: fighter2.color });
+      const leftLeg = new THREE.Mesh(legGeometry, legMaterial);
+      leftLeg.position.set(-0.15, 0.3, 0);
+      leftLeg.castShadow = true;
+      group.add(leftLeg);
+      const rightLeg = new THREE.Mesh(legGeometry, legMaterial);
+      rightLeg.position.set(0.15, 0.3, 0);
+      rightLeg.castShadow = true;
+      group.add(rightLeg);
+
+      const armGeometry = new THREE.CylinderGeometry(0.06, 0.06, 0.5, 8);
+      const armMaterial = new THREE.MeshStandardMaterial({ color: gameConfig.visuals.skinColor });
+      const rightArm = new THREE.Mesh(armGeometry, armMaterial);
+      rightArm.position.set(0.3, 0.7, 0);
+      rightArm.rotation.z = -0.3;
+      rightArm.castShadow = true;
+      group.add(rightArm);
+
+      const stickGeometry = new THREE.CylinderGeometry(0.03, 0.03, 1.2, 8);
+      const stickMaterial = new THREE.MeshStandardMaterial({ color: gameConfig.visuals.stickColor });
+      stick2 = new THREE.Mesh(stickGeometry, stickMaterial);
+      stick2.position.set(-0.4, 0.8, 0);
+      stick2.rotation.z = -Math.PI / 4;
+      stick2.castShadow = true;
+      group.add(stick2);
+
+      fighter2Mesh = group;
+      fighter2Mesh.position.set(fighter2.x, fighter2.y, fighter2.z);
+      scene.add(fighter2Mesh);
+    }
+
+    function createSideBamboo() {
+      const bambooPositions = gameConfig.arena.bambooPositions;
+      bambooPositions.forEach(pos => {
+        const bambooGeometry = new THREE.CylinderGeometry(0.12, 0.12, 3.5, 12);
+        const bambooMaterial = new THREE.MeshStandardMaterial({ color: gameConfig.visuals.bambooColor, roughness: 0.7 });
+        const bamboo = new THREE.Mesh(bambooGeometry, bambooMaterial);
+        bamboo.position.set(pos[0], 1.75, pos[2]);
+        bamboo.castShadow = true;
+        scene.add(bamboo);
+        for (let i = 0; i < 4; i++) {
+          const segmentGeometry = new THREE.TorusGeometry(0.13, 0.02, 8, 12);
+          const segmentMaterial = new THREE.MeshStandardMaterial({ color: 0x1a5c13 });
+          const segment = new THREE.Mesh(segmentGeometry, segmentMaterial);
+          segment.position.set(pos[0], 0.5 + i * 0.9, pos[2]);
+          segment.rotation.x = Math.PI / 2;
+          scene.add(segment);
+        }
+      });
+    }
+
+    function updateFighterMeshes() {
+      if (!fighter1Mesh || !fighter2Mesh) return;
+
+      // Fighter 1 (unchanged)
+      fighter1Mesh.position.set(fighter1.x, fighter1.y, fighter1.z);
+      fighter1Mesh.rotation.y = fighter1.facing > 0 ? 0 : Math.PI;
+      if (stick1) {
+        const stickBase = fighter1.facing > 0 ? Math.PI / 4 : -Math.PI / 4;
+        stick1.rotation.z = stickBase + fighter1.stickRotation;
+      }
+
+      // Fighter 2 - inverted mapping so model faces toward fighter1 correctly
+      fighter2Mesh.position.set(fighter2.x, fighter2.y, fighter2.z);
+      fighter2Mesh.rotation.y = fighter2.facing > 0 ? Math.PI : 0;
+      if (stick2) {
+        const stickBase2 = fighter2.facing > 0 ? -Math.PI / 4 : Math.PI / 4;
+        stick2.rotation.z = stickBase2 + fighter2.stickRotation;
+      }
+
+      // hit flash (body is first child in both groups)
+      const body1 = fighter1Mesh.children.find(c => c.geometry && c.geometry.type === 'BoxGeometry');
+      const body2 = fighter2Mesh.children.find(c => c.geometry && c.geometry.type === 'BoxGeometry');
+      if (body1) {
+        if (fighter1.hitFlash > 0) {
+          body1.material.emissive = new THREE.Color(0xff0000);
+          body1.material.emissiveIntensity = 0.5;
+        } else {
+          body1.material.emissive = new THREE.Color(0x000000);
+        }
+      }
+      if (body2) {
+        if (fighter2.hitFlash > 0) {
+          body2.material.emissive = new THREE.Color(0xff0000);
+          body2.material.emissiveIntensity = 0.5;
+        } else {
+          body2.material.emissive = new THREE.Color(0x000000);
+        }
+      }
+    }
+
+    function updateHitIndicators() {
+      const el1 = document.getElementById('hit1');
+      const el2 = document.getElementById('hit2');
+      if (el1 && fighter1) el1.classList.toggle('active', fighter1.hitFlash > 0);
+      if (el2 && fighter2) el2.classList.toggle('active', fighter2.hitFlash > 0);
+    }
+
+    function updateHealthBar() {
+      if (!fighter1 || !fighter2) return;
+      const h1 = Math.max(0, Math.round(fighter1.health));
+      const h2 = Math.max(0, Math.round(fighter2.health));
+      document.getElementById('health1').style.width = (h1 / fighter1.maxHealth * 100) + '%';
+      document.getElementById('health2').style.width = (h2 / fighter2.maxHealth * 100) + '%';
+      document.getElementById('health1Value').textContent = `${h1}/${fighter1.maxHealth}`;
+      document.getElementById('health2Value').textContent = `${h2}/${fighter2.maxHealth}`;
+    }
+
+    function endGame(winner) {
+      gameRunning = false;
+      document.getElementById('winnerText').textContent = winner;
+      document.getElementById('gameOver').style.display = 'block';
+      try { const bg = document.getElementById('bg-audio'); if (bg) bg.pause(); } catch(e){}
+    }
+
+    function restartGame() {
+      fighter1.health = gameConfig.fighters.player1.stats.health;
+      fighter2.health = gameConfig.fighters.player2.stats.health;
+      fighter1.x = gameConfig.fighters.player1.startPosition.x;
+      fighter2.x = gameConfig.fighters.player2.startPosition.x;
+      fighter1.y = gameConfig.fighters.player1.startPosition.y;
+      fighter2.y = gameConfig.fighters.player2.startPosition.y;
+      fighter1.z = gameConfig.fighters.player1.startPosition.z;
+      fighter2.z = gameConfig.fighters.player2.startPosition.z;
+      fighter1.velocityX = 0;
+      fighter1.velocityY = 0;
+      fighter1.velocityZ = 0;
+      fighter2.velocityX = 0;
+      fighter2.velocityY = 0;
+      fighter2.velocityZ = 0;
+      fighter1.comboCount = 0;
+      fighter2.comboCount = 0;
+      fighter1.stunned = 0;
+      fighter2.stunned = 0;
+      updateHealthBar();
+      document.getElementById('gameOver').style.display = 'none';
+      gameRunning = true;
+    }
+
+    function backToMenu() {
+      document.getElementById('gameOver').style.display = 'none';
+      document.getElementById('gameHUD').classList.add('hidden');
+      document.getElementById('controlsInfo').classList.add('hidden');
+      document.getElementById('startScreen').classList.remove('hidden');
+      gameRunning = false;
+      try { const bg = document.getElementById('bg-audio'); if (bg) { bg.pause(); bg.currentTime = 0; } } catch(e){}
+    }
+
+    function startGame() {
+      document.getElementById('startScreen').classList.add('hidden');
+      document.getElementById('gameHUD').classList.remove('hidden');
+      document.getElementById('controlsInfo').classList.remove('hidden');
+      gameRunning = true;
+      restartGame();
+
+      // play background music on user gesture (Start button)
+      try {
+        const bg = document.getElementById('bg-audio');
+        if (bg) {
+          bg.muted = false;
+          bg.play().catch(()=>{});
+        }
+      } catch(e){}
+    }
+
+    function onWindowResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      if (gameRunning && fighter1 && fighter2) {
+        fighter1.update(fighter2);
+        fighter2.update(fighter1);
+        updateFighterMeshes();
+        updateHitIndicators(); // update HUD hit indicators based on hitFlash
+      }
+      if (renderer && scene && camera) {
+        renderer.render(scene, camera);
+      }
+    }
+
+    loadGameConfig();
+  </script>
+</body>
+</html>
