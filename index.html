@@ -287,18 +287,26 @@
 <body>
   <div class="loading" id="loading">Loading Game Data...</div>
 
-  
+  <!-- Background music: put your audio file at ./audio/fight.mp3 (or change the src) -->
   <audio id="bg-audio" loop preload="auto" style="display:none">
     <source src="audio/fight.mp3" type="audio/mpeg">
     Your browser does not support the audio element.
   </audio>
 
+  <!-- Hit sound effect (place audio/hit.wav) -->
+  <audio id="hit-audio" preload="auto" style="display:none">
+    <source src="audio/slice.mp3" type="audio/wav">
+    Your browser does not support the audio element.
+  </audio>
+
   <!-- Start Screen -->
   <div class="start-screen hidden" id="startScreen">
+    
     <div class="title-3d" id="gameTitle">ARNIS LEGENDS</div>
     <div class="subtitle" id="gameSubtitle">Experience Filipino martial arts in stunning 3D!</div>
     <button class="menu-button" onclick="startGame()">START BATTLE</button>
     <button class="menu-button" onclick="window.location.href='instructions.html'">INSTRUCTIONS</button>
+    
   </div>
 
   <!-- HUD -->
@@ -362,6 +370,24 @@
     let gameRunning = false;
     let keys = {};
     let gameConfig = null;
+
+    // Helper to play a sound element from start (cloned so overlapping allowed)
+    function playSfxElement(id) {
+      try {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const clone = el.cloneNode(true);
+        clone.currentTime = 0;
+        // append to body temporarily so some browsers can play
+        clone.style.display = 'none';
+        document.body.appendChild(clone);
+        clone.play().catch(()=>{});
+        // remove after it ends to avoid DOM buildup
+        clone.addEventListener('ended', () => { try { document.body.removeChild(clone); } catch(e){} });
+        // also remove if playback fails after some timeout
+        setTimeout(() => { try { if (clone.parentNode) document.body.removeChild(clone); } catch(e){} }, 6000);
+      } catch(e) {}
+    }
 
     class Fighter {
       constructor(config, playerKey) {
@@ -504,6 +530,10 @@
         updateHealthBar();
         // set indicator immediately so UI responds on the same frame
         updateHitIndicators();
+
+        // play hit SFX (cloned element so it always plays from start)
+        playSfxElement('hit-audio');
+
         if (opponent.health <= 0 && gameRunning) {
           endGame(this.name + ' Wins!');
         }
@@ -542,6 +572,14 @@
 
         document.getElementById('loading').classList.add('hidden');
         document.getElementById('startScreen').classList.remove('hidden');
+          try {
+        const bg = document.getElementById('bg-audio');
+        if (bg) {
+          bg.pause();
+          bg.currentTime = 0;
+          bg.play().catch(()=>{});
+        }
+      } catch (e) {}
 
         init();
       } catch (error) {
@@ -618,7 +656,7 @@
       animate();
       updateHealthBar();
     }
-    // ...existing code...
+   
     function createFighter1() {
       const group = new THREE.Group();
       const bodyGeometry = new THREE.BoxGeometry(0.5, 1, 0.3);
@@ -796,7 +834,7 @@
       gameRunning = false;
       document.getElementById('winnerText').textContent = winner;
       document.getElementById('gameOver').style.display = 'block';
-      try { const bg = document.getElementById('bg-audio'); if (bg) bg.pause(); } catch(e){}
+      try { const bg = document.getElementById('bg-audio'); if (bg) { bg.pause(); bg.currentTime = 0; } } catch(e){}
     }
 
     function restartGame() {
@@ -821,6 +859,14 @@
       updateHealthBar();
       document.getElementById('gameOver').style.display = 'none';
       gameRunning = true;
+       try {
+        const bg = document.getElementById('bg-audio');
+        if (bg) {
+          bg.pause();
+          bg.currentTime = 0;
+          bg.play().catch(()=>{});
+        }
+      } catch (e) {}
     }
 
     function backToMenu() {
@@ -829,7 +875,14 @@
       document.getElementById('controlsInfo').classList.add('hidden');
       document.getElementById('startScreen').classList.remove('hidden');
       gameRunning = false;
-      try { const bg = document.getElementById('bg-audio'); if (bg) { bg.pause(); bg.currentTime = 0; } } catch(e){}
+      try {
+        const bg = document.getElementById('bg-audio');
+        if (bg) {
+          bg.pause();
+          bg.currentTime = 0;
+          bg.play().catch(()=>{});
+        }
+      } catch (e) {}
     }
 
     function startGame() {
@@ -839,14 +892,15 @@
       gameRunning = true;
       restartGame();
 
-      // play background music on user gesture (Start button)
+      // ensure bg always starts from beginning when replaying
       try {
         const bg = document.getElementById('bg-audio');
         if (bg) {
-          bg.muted = false;
+          bg.pause();
+          bg.currentTime = 0;
           bg.play().catch(()=>{});
         }
-      } catch(e){}
+      } catch (e) {}
     }
 
     function onWindowResize() {
@@ -871,5 +925,4 @@
     loadGameConfig();
   </script>
 </body>
-
 </html>
