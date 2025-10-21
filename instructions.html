@@ -139,30 +139,81 @@
           bg.play().catch(()=>{});
         }
       } catch (e) {}
+
+    // Keep your original layout exactly. Only override the controls values below.
     fetch("api/instruction.json")
       .then(response => response.json())
       .then(data => {
-        // Player 1
+        data = data || {};
+        data.player1 = data.player1 || {};
+        data.player2 = data.player2 || {};
+
+        // FORCE the requested control mappings (no other UI/layout changes)
+        const p1Title = data.player1.title || "PLAYER 1";
+        const p2Title = data.player2.title || "PLAYER 2";
+
+        const p1Controls = {
+          "Move": "W A S D",
+          "Jump": "Space",
+          "Attack": "F",
+          "Block": "G"
+        };
+
+        const p2Controls = {
+          "Move": "Arrow Keys",
+          "Jump": "B",
+          "Attack": "N",
+          "Block": "M"
+        };
+
+        // Render Player 1 using your exact structure/classes
         const player1Div = document.getElementById("player1");
-        player1Div.innerHTML = `<div class="control-title">${data.player1.title}</div>` +
-          Object.entries(data.player1.controls)
+        player1Div.innerHTML = `<div class="control-title">${p1Title}</div>` +
+          Object.entries(p1Controls)
             .map(([action, key]) =>
               `<div class="control-item"><span>${action}:</span> <span class="key">${key}</span></div>`
             ).join("");
 
-        // Player 2
+        // Render Player 2 using your exact structure/classes
         const player2Div = document.getElementById("player2");
-        player2Div.innerHTML = `<div class="control-title">${data.player2.title}</div>` +
-          Object.entries(data.player2.controls)
+        player2Div.innerHTML = `<div class="control-title">${p2Title}</div>` +
+          Object.entries(p2Controls)
             .map(([action, key]) =>
               `<div class="control-item"><span>${action}:</span> <span class="key">${key}</span></div>`
             ).join("");
 
-        // Combat system
+        // Combat system content: prefer data.combat (array) else try data.combatText/string, else fallback.
         const combatDiv = document.getElementById("combat");
-        combatDiv.innerHTML = data.combat.map(c => `<p><strong>${c}</strong></p>`).join("");
+        if (Array.isArray(data.combat) && data.combat.length) {
+          combatDiv.innerHTML = data.combat.map(c => `<p><strong>${c}</strong></p>`).join("");
+        } else if (typeof data.combat === 'string' && data.combat.length) {
+          combatDiv.innerHTML = `<p>${data.combat}</p>`;
+        } else if (data.combatText) {
+          combatDiv.innerHTML = `<p>${data.combatText}</p>`;
+        } else {
+          combatDiv.innerHTML = `<p>Use strikes, blocks and combos. Attack to reduce opponent health. Blocking reduces damage.</p>`;
+        }
       })
-      .catch(error => console.error("Error loading instructions:", error));
+      .catch(error => {
+        console.error("Error loading instructions:", error);
+        // On error show forced controls so layout remains consistent
+        const player1Div = document.getElementById("player1");
+        player1Div.innerHTML = `<div class="control-title">PLAYER 1</div>
+          <div class="control-item"><span>Move:</span> <span class="key">W A S D</span></div>
+          <div class="control-item"><span>Jump:</span> <span class="key">Space</span></div>
+          <div class="control-item"><span>Attack:</span> <span class="key">F</span></div>
+          <div class="control-item"><span>Block:</span> <span class="key">G</span></div>`;
+
+        const player2Div = document.getElementById("player2");
+        player2Div.innerHTML = `<div class="control-title">PLAYER 2</div>
+          <div class="control-item"><span>Move:</span> <span class="key">Arrow Keys</span></div>
+          <div class="control-item"><span>Jump:</span> <span class="key">B</span></div>
+          <div class="control-item"><span>Attack:</span> <span class="key">N</span></div>
+          <div class="control-item"><span>Block:</span> <span class="key">M</span></div>`;
+
+        const combatDiv = document.getElementById("combat");
+        combatDiv.innerHTML = `<p><strong>Use strikes, blocks and combos. Attack to reduce opponent health. Blocking reduces damage.</strong></p>`;
+      });
   </script>
 </body>
 </html>
